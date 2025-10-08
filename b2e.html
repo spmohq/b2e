@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Translation & Refinement Prompt Generator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Source+Code+Pro:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-gradient-start: #1f2937;
+      --bg-gradient-end: #111827;
+      --card-bg: rgba(31, 41, 55, 0.5); /* Semi-transparent card background */
+      --card-border: rgba(255, 255, 255, 0.1);
+      --text-primary: #f9fafb;
+      --text-secondary: #d1d5db;
+      --text-heading: #ffffff;
+      --accent-primary: #22d3ee;
+      --accent-hover: #67e8f9;
+      --accent-success: #34d399;
+      --input-bg: #374151;
+      --code-bg: rgba(0, 0, 0, 0.3);
+      --shadow-color: rgba(0, 0, 0, 0.25);
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: linear-gradient(135deg, var(--bg-gradient-start), var(--bg-gradient-end));
+      color: var(--text-primary);
+      line-height: 1.6;
+      padding: 40px 20px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .container {
+      max-width: 850px;
+      width: 100%;
+      margin: 0 auto;
+      flex-grow: 1;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+    h1 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: var(--text-heading);
+      letter-spacing: -1px;
+      margin-bottom: 10px;
+    }
+    p.subtitle {
+      font-size: 1.1rem;
+      color: var(--text-secondary);
+    }
+    .input-card {
+        margin-bottom: 40px;
+    }
+    .prompt-text-input {
+        width: 100%;
+        min-height: 150px;
+        background-color: var(--input-bg);
+        border: 1px solid var(--card-border);
+        border-radius: 10px;
+        padding: 15px;
+        color: var(--text-primary);
+        font-family: 'Inter', sans-serif;
+        font-size: 1rem;
+        resize: vertical;
+        transition: border-color 0.3s, box-shadow 0.3s;
+    }
+    .prompt-text-input:focus {
+        outline: none;
+        border-color: var(--accent-primary);
+        box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.3);
+    }
+    .prompts-container {
+      display: grid;
+      gap: 30px;
+    }
+    .prompt-card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      box-shadow: 0 8px 32px 0 var(--shadow-color);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px); /* For Safari */
+      padding: 25px;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .prompt-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 40px 0 var(--shadow-color);
+    }
+    .prompt-card h2 {
+      font-size: 1.75rem;
+      font-weight: 600;
+      color: var(--text-heading);
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--card-border);
+    }
+    .prompt-text {
+      background-color: var(--code-bg);
+      padding: 20px;
+      border-radius: 10px;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      font-family: 'Source Code Pro', "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      font-size: 1rem;
+      color: var(--text-primary);
+      font-weight: 600;
+      flex-grow: 1;
+      margin-bottom: 20px;
+      border: 1px solid var(--card-border);
+    }
+    .copy-button {
+      align-self: flex-end;
+      padding: 10px 20px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--bg-gradient-end);
+      background-color: var(--accent-primary);
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.3s, transform 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .copy-button:hover {
+      background-color: var(--accent-hover);
+      transform: scale(1.05);
+    }
+    .copy-button.copied {
+      background-color: var(--accent-success);
+    }
+    .copy-button .icon {
+      width: 16px;
+      height: 16px;
+    }
+    .copy-button .copied-icon {
+        display: none;
+    }
+    .copy-button.copied .copy-icon {
+        display: none;
+    }
+    .copy-button.copied .copied-icon {
+        display: inline-block;
+    }
+    @media (max-width: 600px) {
+      body {
+        padding: 20px 15px;
+      }
+      h1 {
+        font-size: 2rem;
+      }
+      .prompt-card h2 {
+        font-size: 1.4rem;
+      }
+      .prompt-text {
+          font-size: 0.9rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <h1>Translation & Refinement Prompt Generator</h1>
+      <p class="subtitle">Enter your text below to generate two powerful prompts for translation and style refinement.</p>
+    </header>
+
+    <main>
+      <div class="prompt-card input-card">
+          <h2>Your Text to Translate</h2>
+          <textarea id="textToTranslate" class="prompt-text-input" placeholder="Paste or type your text here..."></textarea>
+      </div>
+
+      <div class="prompts-container" id="promptsContainer">
+        <div class="prompt-card">
+          <h2>Prompt 1: Translation & Refinement</h2>
+          <pre id="prompt1Text" class="prompt-text"></pre>
+          <button class="copy-button" data-target="prompt1Text">
+            <svg class="icon copy-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 01-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5a1.125 1.125 0 01-1.125-1.125v-1.5a3.375 3.375 0 00-3.375-3.375H9.75" /></svg>
+            <svg class="icon copied-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
+            <span class="button-text">Copy Prompt</span>
+          </button>
+        </div>
+        <div class="prompt-card">
+            <h2>Prompt 2: Stylistic Rewrite (Follow-up)</h2>
+            <pre id="prompt2Text" class="prompt-text"></pre>
+            <button class="copy-button" data-target="prompt2Text">
+              <svg class="icon copy-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 01-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5a1.125 1.125 0 01-1.125-1.125v-1.5a3.375 3.375 0 00-3.375-3.375H9.75" /></svg>
+              <svg class="icon copied-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
+              <span class="button-text">Copy Prompt</span>
+            </button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const textInput = document.getElementById('textToTranslate');
+      const prompt1Output = document.getElementById('prompt1Text');
+      const prompt2Output = document.getElementById('prompt2Text');
+      const promptsContainer = document.getElementById('promptsContainer');
+      
+      const prompt1Template = `Please translate and refine my passage into international standard English, while keeping the tone of the original text.
+
+Here is my passage:
+
+[TEXT_PLACEHOLDER]`;
+
+      const prompt2Text = `I want you to rewrite the content you gave me in the previous reply.
+
+Step 1: Read the tone and style guidelines below:
+Write as if you're explaining this to a friend who is smart but busy.
+Be clear, helpful, and skip the fluff.
+
+Step 2: Read the following writing style reference:
+
+You are a human writer. These are your comprehensive writing guidelines. Anything that you output will adhere to these guidelines exactly.
+
+POSITIVE DIRECTIVES (How you SHOULD write)
+
+Clarity and brevity
+• Craft sentences that average 10–20 words and focus on a single idea, with the occasional longer sentence.
+
+Active voice and direct verbs
+• Use active voice 90 % of the time.
+
+Everyday vocabulary
+• Substitute common, concrete words for abstraction.
+
+Straightforward punctuation
+• Rely primarily on periods, commas, question marks, and occasional colons for lists.
+
+Varied sentence length, minimal complexity
+• Mix short and medium sentences; avoid stacking clauses.
+
+Logical flow without buzzwords
+• Build arguments with plain connectors: ‘and’, ‘but’, ‘so’, ‘then’.
+
+Concrete detail over abstraction
+• Provide numbers, dates, names, and measurable facts whenever possible.
+
+Human cadence
+• Vary paragraph length; ask a genuine question no more than once per 300 words, and answer it immediately.
+
+NEGATIVE DIRECTIVES (What you MUST AVOID)
+
+A. Punctuation to avoid
+
+Semicolons (;)
+✗ Example to avoid: ‘We researched extensively; the results were clear.’
+✓ Rewrite: ‘We researched extensively, and the results were clear.’
+
+Em dashes ( — )
+✗ Example to avoid: ‘The idea — though interesting — was rejected.’
+✓ Rewrite: ‘The idea was interesting but was rejected.’
+
+B. Overused words & phrases
+• Never use any of the following, in any form or capitalization:
+
+At the end of the day,With that being said,It goes without saying,In a nutshell,Needless to say,When it comes to,A significant number of,It’s worth mentioning,Last but not least,Cutting‑edge,Leveraging,Moving forward,Going forward,On the other hand,Notwithstanding,Takeaway,As a matter of fact,In the realm of,Seamless integration,Robust framework,Holistic approach,Paradigm shift,Synergy,Scale‑up,Optimize,Game‑changer,Unleash,Uncover,In a world,In a sea of,Digital landscape,Elevate,Embark,Delve,Game Changer,In the midst,In addition,It’s important to note,Delve into,Tapestry,Bustling,In summary,In conclusion,Remember that …,Take a dive into,Navigating (e.g., ‘Navigating the landscape’),Landscape (metaphorical),Testament (e.g., ‘a testament to …’),In the world of,Realm,Virtuoso,Symphony,bustinling,vibrant,Firstly, Moreover,Furthermore,However,Therefore,Additionally,Specifically, Generally,Consequently,Importantly,Similarly,Nonetheless,As a result,Indeed,Thus,Alternatively,Notably,As well as,Despite, Essentially,While,Unless,Also,Even though,Because (as subordinate conjunction),In contrast,Although,In order to,Due to,Even if,Given that,Arguably,To consider,Ensure,Essential,Vital,Out of the box,Underscores,Soul,Crucible,It depends on,You may want to,This is not an exhaustive list,You could consider,As previously mentioned,It’s worth noting that,To summarize,Ultimately,To put it simply,Pesky,Promptly,Dive into,In today’s digital era,Reverberate,Enhance,Emphasise,Enable,Hustle and bustle,Revolutionize,Folks,Foster,Sure,Labyrinthine,Moist,Remnant,As a professional,Subsequently,Nestled,Labyrinth,Gossamer,Enigma,Whispering,Sights unseen,Sounds unheard,A testament to …,Dance,Metamorphosis,Indelible
+
+✗ Example to avoid: ‘Cutting‑edge analytics will revolutionize your workflow.’
+✓ Rewrite: ‘The software measures performance faster.’
+
+C. Overused single words to ban
+however, moreover, furthermore, additionally, consequently, therefore, ultimately, generally, essentially, arguably, significant, innovative, efficient, dynamic, ensure, foster, leverage, utilize
+
+✗ Example to avoid: ‘We must leverage dynamic, innovative approaches.’
+✓ Rewrite: ‘We must try new approaches.’
+
+D. Overused multi‑word phrases to ban
+‘I apologize for any confusion …’
+‘I hope this helps.’
+‘Please let me know if you need further clarification.’
+‘One might argue that …’
+‘Both sides have merit.’
+‘Ultimately, the answer depends on …’
+‘In other words, …’
+‘This is not an exhaustive list, but …’
+‘Dive into the world of …’
+‘Unlock the secrets of …’
+‘I hope this email finds you well.’
+‘Thank you for reaching out.’
+‘If you have any other questions, feel free to ask.’
+
+✗ Example to avoid: ‘In other words, both sides have merit.’
+✓ Rewrite: ‘Each option has advantages.’
+
+E. Parts of speech to minimize
+• Adverbs / conjunctive adverbs: however, moreover, furthermore, additionally, consequently, ultimately, generally, essentially
+• Modals & hedging: might, could, would, may, tends to
+• Verbs: ensure, foster, leverage, utilize
+• Adjectives: significant, innovative, efficient, dynamic
+• Nouns: insight(s), perspective, solution(s), approach(es)
+
+✗ Example to avoid: ‘We might leverage efficient solutions.’
+✓ Rewrite: ‘We will use faster tools.’
+
+F. Sentence‑structure patterns to eliminate
+
+Complex, multi‑clause sentences.
+✗ Example: ‘Because the data were incomplete and the timeline was short, we postponed the launch, although we had secured funding.’
+✓ Preferred: ‘The data were incomplete. We had little time. We postponed the launch. Funding was ready.’
+
+•Overuse of subordinating conjunctions (because, although, since, if, unless, when, while, as, before).
+•Sentences containing more than one verb phrase.
+•Chains of prepositional phrases.
+•Multiple dependent clauses strung together.
+• Artificial parallelism used solely for rhythm.
+
+G. Formatting
+• Do not begin list items with transition words like ‘Firstly’, ‘Moreover’, etc.
+• Avoid numbered headings unless the user asks for an outline.
+• Do not use ALL‑CAPS for emphasis.
+
+H. Tone and style
+• Never mention or reference your own limitations (e.g., ‘As an AI …’).
+• Do not apologize.
+• Do not hedge; state facts directly.
+• Avoid clichés, metaphors about journeys, music, or landscapes.
+• Maintain a formal yet approachable tone that is free of corporate jargon.
+
+FAILURE TO COMPLY WITH ANY NEGATIVE DIRECTIVE INVALIDATES THE OUTPUT.
+
+When you are writing, please think very deeply about each sentence that you write, and ensure that it complies with these directions before moving on to the next sentence.`;
+
+      function updatePrompts() {
+        const userInput = textInput.value;
+        const textToDisplay = userInput.trim() === '' ? '[Your text to translate here]' : userInput;
+        prompt1Output.textContent = prompt1Template.replace('[TEXT_PLACEHOLDER]', textToDisplay);
+      }
+
+      // Set initial state
+      prompt2Output.textContent = prompt2Text;
+      updatePrompts();
+
+      // Listen for input
+      textInput.addEventListener('input', updatePrompts);
+
+      // Event delegation for the copy button
+      promptsContainer.addEventListener('click', (event) => {
+        const button = event.target.closest('.copy-button');
+        if (!button) return;
+
+        const targetId = button.dataset.target;
+        const textToCopy = document.getElementById(targetId).textContent;
+        const buttonTextEl = button.querySelector('.button-text');
+
+        navigator.clipboard.writeText(textToCopy).then(() => {
+          const originalText = buttonTextEl.textContent;
+          buttonTextEl.textContent = 'Copied!';
+          button.classList.add('copied');
+          
+          setTimeout(() => {
+            buttonTextEl.textContent = originalText;
+            button.classList.remove('copied');
+          }, 2000);
+        }).catch(err => {
+          console.error('Failed to copy text: ', err);
+          alert('Failed to copy text. Please try again.');
+        });
+      });
+    });
+  </script>
+
+    <footer class="footer">
+        <div style="padding-top: 30px;">&nbsp;</div>
+        <center><p>Copyright &copy; <script>document.write(new Date().getFullYear())</script> Siva Prasad Mukherjee. All Rights Reserved.</p></center>
+    </footer>
+
+</body>
+</html>
